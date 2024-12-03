@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cam-demo
+spec:
+  selector:
+    matchLabels:
+      app: cam-demo
+  template:
+    metadata:
+      labels:
+        app: cam-demo
+    spec:
+      serviceAccountName: cam-demo-sa
+      containers:
+      - name: app
+        image: nginx:latest
+        ports:
+          - containerPort: 80
+        env:
+          # anh nho mapping secret vô mấy biến nì nhe
+        - name: DB_USER 
+          valueFrom:
+            secretKeyRef:
+              name: cam-demo-db-secret
+              key: username
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: cam-demo-db-secret
+              key: password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: cam-demo-db-secret
+              key: database
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+      - name: cloud-sql-proxy
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4
+        args:
+          - "--structured-logs"
+          - "--port=5555"
+          # db instance name
+          - "dynamic-branch-441814-f1:us-central1:cam-demo-database" 
+        securityContext:
+          runAsNonRoot: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi" 
+            cpu: "500m"
